@@ -3,13 +3,15 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "dashed";
-export type ButtonSize = "sm" | "md";
+export type ButtonSize = "xs" | "sm" | "md";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** Render a square icon button (no horizontal padding). */
   iconOnly?: boolean;
+  /** Stretch the button to fill the available width. */
+  fullWidth?: boolean;
 }
 
 function cn(...parts: Array<string | false | null | undefined>) {
@@ -31,6 +33,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
 };
 
 const SIZES: Record<ButtonSize, { text: string; icon: string }> = {
+  xs: { text: "h-9 px-3.5 text-[10px]", icon: "h-8 w-8" },
   sm: { text: "h-9 px-3.5 text-[13px]", icon: "h-9 w-9" },
   md: { text: "h-11 px-4 text-sm", icon: "h-11 w-11" },
 };
@@ -40,6 +43,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     variant = "secondary",
     size = "md",
     iconOnly = false,
+    fullWidth = false,
     type,
     className,
     children,
@@ -55,6 +59,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
         BASE,
         VARIANTS[variant],
         iconOnly ? SIZES[size].icon : SIZES[size].text,
+        fullWidth && "w-full",
         className,
       )}
       {...rest}

@@ -1,6 +1,7 @@
 "use client"
 import { RotateCcw, X } from "lucide-react"
 import { useVaporStore } from "@/lib/store"
+import Button from "./Button"
 import Slider from "./Slider"
 
 function Toggle({
@@ -60,7 +61,7 @@ export default function Sidebar() {
 
 			<aside
 				data-no-swipe
-        style={{ top: 62, bottom: 10 }}
+				style={{ top: 62, bottom: 10 }}
 				className={`glass-panel absolute right-2.5 z-40 flex w-[300px] max-w-[calc(100vw-1.25rem)] flex-col rounded-2xl transition-[transform,opacity] duration-300 ease-out lg:pointer-events-auto lg:translate-x-0 lg:opacity-100 ${
 					open
 						? "pointer-events-auto translate-x-0 opacity-100"
@@ -78,7 +79,7 @@ export default function Sidebar() {
 					</button>
 				</div>
 
-				<div className='flex-1 space-y-6 px-5 pt-1 pb-5 overflow-y-auto thin-scroll'>
+				<div className='flex flex-col flex-1 gap-y-6 px-5 pt-1 pb-5 overflow-y-auto thin-scroll'>
 					<div className='space-y-6'>
 						<Slider
 							label='Speed'
@@ -146,13 +147,10 @@ export default function Sidebar() {
 						/>
 					</div>
 
-					<button
-						onClick={resetSettings}
-						className='flex justify-center items-center gap-2 bg-white/[0.02] hover:bg-white/5 py-2.5 border border-white/8 rounded-xl w-full font-semibold text-[10px] text-text-dim hover:text-text uppercase tracking-[0.18em] transition-colors cursor-pointer'
-					>
+					<Button className='mt-auto' variant='ghost' fullWidth onClick={resetSettings}>
 						<RotateCcw size={13} />
 						Reset settings
-					</button>
+					</Button>
 				</div>
 			</aside>
 		</>

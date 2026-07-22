@@ -56,6 +56,7 @@ interface VaporState {
   setSidebarOpen: (open: boolean) => void;
   addFiles: (files: File[]) => void;
   removeImage: (id: string) => void;
+  reorderImages: (newOrder: VaporImage[]) => void;
   clearAll: () => void;
   setCurrent: (index: number) => void;
 
@@ -115,6 +116,20 @@ export const useVaporStore = create<VaporState>((set, get) => ({
       if (idx < currentIndex) currentIndex -= 1;
       currentIndex = Math.max(0, Math.min(currentIndex, images.length - 1));
       return { images, currentIndex, mode: "idle" };
+    });
+  },
+
+  reorderImages: (newOrder) => {
+    set((s) => {
+      // Keep the currently displayed image centered after the reorder.
+      const currentId = s.images[s.currentIndex]?.id;
+      const nextIndex = currentId
+        ? newOrder.findIndex((i) => i.id === currentId)
+        : s.currentIndex;
+      return {
+        images: newOrder,
+        currentIndex: nextIndex === -1 ? s.currentIndex : nextIndex,
+      };
     });
   },
 

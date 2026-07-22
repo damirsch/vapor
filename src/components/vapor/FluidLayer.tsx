@@ -26,7 +26,7 @@ const EMIT_JITTER = 4
  * the smoke reads as the same colour as the picture (grey stays grey). Lower it
  * only if bright images bloom/halo too much.
  */
-const IMAGE_DYE_BRIGHTNESS = 1.0
+const IMAGE_DYE_BRIGHTNESS = 0.7
 
 /** Reference multiplies the pointer delta by 5 to get the splat velocity. */
 const REF_FORCE = 5

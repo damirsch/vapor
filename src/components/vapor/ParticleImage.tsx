@@ -202,7 +202,7 @@ function ImageMesh({
         uDirection: {
           value: new THREE.Vector2(...directionToVec(settings.direction)),
         },
-        uDrift: { value: new THREE.Vector2(settings.driftX, settings.driftY) },
+        uDrift: { value: new THREE.Vector2(0, 0) },
         uTrail: { value: trailPos },
         uTrailAge: { value: trailAge },
         uTrailLife: { value: TRAIL_LIFE },
@@ -418,7 +418,6 @@ function ImageMesh({
     pu.uHoverRadius.value = settings.hoverRadius;
     pu.uHoverForce.value = settings.hoverForce;
     pu.uDirection.value.set(dir[0], dir[1]);
-    pu.uDrift.value.set(settings.driftX, settings.driftY);
     pu.uOpacity.value = opacity.current;
   });
 

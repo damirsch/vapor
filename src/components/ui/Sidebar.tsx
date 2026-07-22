@@ -108,24 +108,6 @@ export default function Sidebar() {
 							format={(v) => v.toFixed(2)}
 							caption='Amount of swirl in the rising smoke'
 						/>
-						<Slider
-							label='Drift X'
-							value={settings.driftX}
-							min={-1.5}
-							max={1.5}
-							onChange={(v) => update("driftX", v)}
-							format={(v) => v.toFixed(2)}
-							caption='Sideways bias of the drifting smoke'
-						/>
-						<Slider
-							label='Drift Y'
-							value={settings.driftY}
-							min={-1.5}
-							max={1.5}
-							onChange={(v) => update("driftY", v)}
-							format={(v) => v.toFixed(2)}
-							caption='Vertical bias — negative falls, positive rises'
-						/>
 					</div>
 
 					<div className='space-y-6'>

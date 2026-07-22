@@ -26,10 +26,6 @@ export interface Settings {
   edge: number;
   /** How long particles drift & linger before fully vanishing. */
   lifetime: number;
-  /** Horizontal drift of the vapor. */
-  driftX: number;
-  /** Vertical drift of the vapor (negative = downward, the default). */
-  driftY: number;
   /** Radius of the cursor wake field. */
   hoverRadius: number;
   /** Strength of the cursor wake (how hard the pointer drags the smoke). */
@@ -47,18 +43,16 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  speed: 0.5,
-  strength: 0.35,
-  turbulence: 2.34,
+  speed: 1.0,
+  strength: 0.6,
+  turbulence: 1.23,
   particleSize: 2.8,
   density: 400,
-  edge: 0.2,
-  lifetime: 1.5,
-  driftX: 0.66,
-  driftY: 0.8,
+  edge: 0.09,
+  lifetime: 0.8,
   hoverRadius: 0.3,
   hoverForce: 0.2,
-  delay: 0.4,
+  delay: 0.3,
   direction: "up",
   cursorSmoke: false,
 };

@@ -6,7 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Clipboard, MousePointer2 } from "lucide-react";
 import { useVaporStore } from "@/lib/store";
 import Sidebar from "@/components/ui/Sidebar";
-import TopBar from "@/components/ui/TopBar";
+import Header from "@/components/ui/Header";
+import BottomBar from "@/components/ui/BottomBar";
 import LeftRail from "@/components/ui/LeftRail";
 
 const Scene = dynamic(() => import("@/components/vapor/Scene"), {
@@ -198,16 +199,10 @@ export default function VaporApp() {
       <Scene />
       <FluidLayer />
 
-      <TopBar openPicker={openPicker} />
+      <Header />
       <LeftRail openPicker={openPicker} />
       <Sidebar />
-
-      {/* Footer credit */}
-      <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex h-[30px] items-center justify-center">
-        <span className="text-[10px] tracking-[0.24em] text-text-faint uppercase">
-          © 2026 Vapor OS
-        </span>
-      </footer>
+      <BottomBar openPicker={openPicker} />
 
       {/* Empty state */}
       <AnimatePresence>
@@ -216,7 +211,7 @@ export default function VaporApp() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-10 flex items-center justify-center px-6 pt-[52px] pb-[30px] md:pl-[124px] lg:pr-[328px]"
+            className="absolute inset-0 z-10 flex items-center justify-center px-6 pt-[52px] md:pl-[140px] lg:pr-[328px]"
           >
             <button
               onClick={openPicker}

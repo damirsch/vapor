@@ -69,7 +69,7 @@ vec3 curlNoise(vec3 p){
   float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
   return normalize(vec3(x, y, z) / (2.0 * e) + 1e-5);
 }
-`;
+`
 
 export const PARTICLE_VERTEX = /* glsl */ `
 #define TRAIL_MAX 16
@@ -167,7 +167,7 @@ void main() {
   // Fade in on ignition, fully gone by the end of life.
   vAlpha = smoothstep(0.0, 0.06, life) * (1.0 - smoothstep(0.7, 1.0, life));
 }
-`;
+`
 
 export const PARTICLE_FRAGMENT = /* glsl */ `
 precision highp float;
@@ -189,7 +189,7 @@ void main() {
   vec3 col = vColor + vD * 0.06;
   gl_FragColor = vec4(col, mask * vAlpha * 0.55 * uOpacity);
 }
-`;
+`
 
 export const PLANE_VERTEX = /* glsl */ `
 varying vec2 vUv;
@@ -197,7 +197,7 @@ void main() {
   vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
-`;
+`
 
 export const PLANE_FRAGMENT = /* glsl */ `
 precision highp float;
@@ -207,7 +207,6 @@ uniform float uProgress;
 uniform float uEdge;
 uniform float uOpacity;
 uniform vec2 uDirection;
-uniform vec3 uEdgeColor;
 
 varying vec2 vUv;
 
@@ -220,17 +219,12 @@ void main() {
   // Keep the image opaque well into the swept band, then cut. The fluid smoke
   // (drawn on top) is what makes it "dissolve", so we must NOT fade the plane
   // to transparent early — otherwise the dark background shows through before
-  // the smoke fills in, reading as a black line ahead of the white edge.
+  // the smoke fills in. The bright sweep line is no longer baked in here; it is
+  // drawn as a separate crisp "scanner" quad (see ScannerLine in ParticleImage).
   float body = 1.0 - smoothstep(0.6, 0.95, d);
-  // A single bright sweep line, placed a bit into the swept region (lower, in
-  // the direction of travel) rather than right at the leading boundary.
-  float edge = smoothstep(0.06, 0.13, d) * (1.0 - smoothstep(0.13, 0.28, d));
-
-  vec3 col = tex.rgb + uEdgeColor * edge * 0.6;
-  float a = max(tex.a * body, tex.a * edge);
-  a *= uOpacity;
+  float a = tex.a * body * uOpacity;
   if (a < 0.01) discard;
 
-  gl_FragColor = vec4(col, a);
+  gl_FragColor = vec4(tex.rgb, a);
 }
-`;
+`

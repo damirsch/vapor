@@ -59,10 +59,13 @@ export interface FluidConfig {
 
 export const DEFAULT_FLUID_CONFIG: FluidConfig = {
 	SIM_RESOLUTION: 128,
-	// Reference value: the smoke's blend/softness is tuned around this.
-	DYE_RESOLUTION: 512,
-	// Reference value: dye fades fairly quickly so the smoke stays wispy.
-	DENSITY_DISSIPATION: 0.97,
+	// Higher dye resolution → crisper, higher-quality smoke that holds the
+	// image's detail/colour instead of smearing into a low-res blur.
+	DYE_RESOLUTION: 1024,
+	// Dye fades fairly quickly so the smoke stays wispy, but a touch slower than
+	// the reference so mid-tones (e.g. a plain grey) linger long enough to read
+	// as smoke of the same colour before dissolving.
+	DENSITY_DISSIPATION: 0.975,
 	// Matches the reference: smooth coasting swirls, no over-persistent velocity.
 	VELOCITY_DISSIPATION: 0.98,
 	PRESSURE_DISSIPATION: 0.8,

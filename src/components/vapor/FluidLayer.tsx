@@ -11,20 +11,22 @@ import { FluidSim, type ImageTex } from "@/lib/fluid/FluidSim"
  * The emit shader saturates at the true color, so this only controls how
  * quickly dye ramps up as the sweep crosses — it can't blow out to white.
  */
-const EMIT_AMOUNT = 0.5
+const EMIT_AMOUNT = 0.9
 /**
  * Vertical velocity injected in the band. Negative = the smoke sinks/falls
- * downward as the sweep line travels up (heavy vapor pouring down).
+ * downward as the sweep line travels up (heavy vapor pouring down). Kept gentle
+ * so the dye keeps the image's colour/shape as it lifts off instead of being
+ * flung around and thinned out into invisibility.
  */
-const EMIT_RISE = -34
+const EMIT_RISE = -24
 /** Sideways jitter injected in the band for natural swirl. */
-const EMIT_JITTER = 7
+const EMIT_JITTER = 4
 /**
- * Scales down the image's emitted dye so its bloom/glow is gentler than the
- * cursor smoke's. Bloom is non-linear near the threshold, so a small cut here
- * removes a lot of the halo while keeping the smoke clearly coloured.
+ * Brightness of the image's emitted dye. 1.0 = emit the true image colour so
+ * the smoke reads as the same colour as the picture (grey stays grey). Lower it
+ * only if bright images bloom/halo too much.
  */
-const IMAGE_DYE_BRIGHTNESS = 0.6
+const IMAGE_DYE_BRIGHTNESS = 1.0
 
 /** Reference multiplies the pointer delta by 5 to get the splat velocity. */
 const REF_FORCE = 5

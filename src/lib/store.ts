@@ -23,7 +23,7 @@ function uid() {
 export const TOPBAR_H = 52;
 export const FOOTER_H = 30;
 
-export const RAIL_WIDTH = 96;
+export const RAIL_WIDTH = 116;
 export const RAIL_MARGIN = 14;
 /** Horizontal space the left thumbnail rail occupies. */
 export const RAIL_OCCUPY = RAIL_WIDTH + RAIL_MARGIN * 2;

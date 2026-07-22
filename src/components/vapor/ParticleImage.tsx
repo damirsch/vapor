@@ -29,6 +29,12 @@ import {
  */
 const USE_PARTICLES = false;
 
+/** GLSL-style smoothstep for driving the scanner line's edge fades. */
+function smoothstep(e0: number, e1: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
+
 /** Max cursor-path samples kept for the wake (must match the shader). */
 const TRAIL_MAX = 16;
 /** How long (seconds) a sample influences the smoke before relaxing away. */
@@ -220,12 +226,31 @@ function ImageMesh({
         uDirection: {
           value: new THREE.Vector2(...directionToVec(settings.direction)),
         },
-        uEdgeColor: { value: new THREE.Color(0.9, 0.92, 0.98) },
         uOpacity: { value: opacity.current },
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [texture]);
+
+  // Crisp "scanner" line: a flat white rectangle (no blur), drawn as its own
+  // mesh so it stays sharp and can extend a little past the image edges. It
+  // rides the sweep front, driven per-frame in useFrame below.
+  const lineRef = useRef<THREE.Mesh>(null);
+  const lineMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(0.95, 0.97, 1.0),
+        transparent: true,
+        depthWrite: false,
+        depthTest: false,
+        opacity: 0,
+      }),
+    [],
+  );
+  // How far the line sits past each edge of the image, and how thick it is —
+  // both in world units, derived from the plane size so they scale per image.
+  const LINE_OVERHANG = Math.max(meta.width, meta.height) * 0.06;
+  const LINE_THICKNESS = Math.max(meta.width, meta.height) * 0.01;
 
   const dir = directionToVec(settings.direction);
 
@@ -239,9 +264,10 @@ function ImageMesh({
       geometry?.dispose();
       pointsMaterial.dispose();
       planeMaterial.dispose();
+      lineMaterial.dispose();
       texture.dispose();
     };
-  }, [geometry, pointsMaterial, planeMaterial, texture]);
+  }, [geometry, pointsMaterial, planeMaterial, lineMaterial, texture]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -272,6 +298,42 @@ function ImageMesh({
     planeMaterial.uniforms.uEdge.value = settings.edge;
     planeMaterial.uniforms.uDirection.value.set(dir[0], dir[1]);
     planeMaterial.uniforms.uOpacity.value = opacity.current;
+
+    // Drive the crisp scanner line: a flat rectangle riding the sweep front,
+    // slightly wider than the image, sharp (no blur) and axis-aligned.
+    if (lineRef.current) {
+      const line = lineRef.current;
+      const vertical = Math.abs(dir[1]) >= Math.abs(dir[0]);
+      const sgn = vertical
+        ? dir[1] >= 0
+          ? 1
+          : -1
+        : dir[0] >= 0
+          ? 1
+          : -1;
+      // Front position in threshold units (0 = start edge, 1 = far edge); sit a
+      // touch into the dissolve band so it reads as the cutting edge.
+      const frontThresh = progress.current - settings.edge * 0.5;
+
+      if (vertical) {
+        line.position.set(0, sgn * (frontThresh - 0.5) * meta.height, 0.02);
+        line.scale.set(meta.width + LINE_OVERHANG * 2, LINE_THICKNESS, 1);
+      } else {
+        line.position.set(sgn * (frontThresh - 0.5) * meta.width, 0, 0.02);
+        line.scale.set(LINE_THICKNESS, meta.height + LINE_OVERHANG * 2, 1);
+      }
+
+      // Visible only while the front crosses the image, only while vaporizing,
+      // with a soft fade in/out at the two ends so it doesn't pop.
+      const inBand =
+        smoothstep(-0.03, 0.02, frontThresh) *
+        (1 - smoothstep(0.98, 1.03, frontThresh));
+      const target =
+        (status === "vaporizing" ? 1 : 0) * inBand * opacity.current * 0.95;
+      lineMaterial.opacity +=
+        (target - lineMaterial.opacity) * Math.min(1, dt * 20);
+      line.visible = lineMaterial.opacity > 0.002;
+    }
 
     // Report this image's live sweep progress + on-screen rect so the fluid
     // overlay knows where (and how far) to emit dye. Project the plane corners
@@ -388,6 +450,9 @@ function ImageMesh({
         }
       >
         <planeGeometry args={[meta.width, meta.height]} />
+      </mesh>
+      <mesh ref={lineRef} material={lineMaterial} renderOrder={10} visible={false}>
+        <planeGeometry args={[1, 1]} />
       </mesh>
       {USE_PARTICLES && geometry && (
         <points geometry={geometry} material={pointsMaterial} />

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { SIDEBAR_OCCUPY, useVaporStore } from "@/lib/store";
+import { PANEL_OCCUPY, RAIL_OCCUPY, useVaporStore } from "@/lib/store";
 import { buildParticleData, loadImageMeta } from "@/lib/imageParticles";
 import ParticleImage from "./ParticleImage";
 
@@ -18,12 +18,13 @@ const WINDOW = 1;
  * keeps pointer→world math consistent.
  */
 function CameraCentering() {
-  const sidebarOpen = useVaporStore((s) => s.sidebarOpen);
   const { camera, size, viewport } = useThree();
 
   useFrame(() => {
     const wide = size.width >= 768;
-    const targetPx = sidebarOpen && wide ? SIDEBAR_OCCUPY / 2 : 0;
+    // Center the image in the free area between the left rail and right panel.
+    // Positive camera.x shifts the view right => content appears further left.
+    const targetPx = wide ? (PANEL_OCCUPY - RAIL_OCCUPY) / 2 : 0;
     const targetWorld = (targetPx / size.width) * viewport.width;
     camera.position.x += (targetWorld - camera.position.x) * 0.12;
     camera.updateProjectionMatrix();

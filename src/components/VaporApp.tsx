@@ -6,7 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Clipboard, MousePointer2 } from "lucide-react";
 import { useVaporStore } from "@/lib/store";
 import Sidebar from "@/components/ui/Sidebar";
-import Controls from "@/components/ui/Controls";
+import TopBar from "@/components/ui/TopBar";
+import LeftRail from "@/components/ui/LeftRail";
 
 const Scene = dynamic(() => import("@/components/vapor/Scene"), {
   ssr: false,
@@ -18,7 +19,6 @@ const FluidLayer = dynamic(() => import("@/components/vapor/FluidLayer"), {
 export default function VaporApp() {
   const images = useVaporStore((s) => s.images);
   const addFiles = useVaporStore((s) => s.addFiles);
-  const sidebarOpen = useVaporStore((s) => s.sidebarOpen);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
@@ -198,8 +198,16 @@ export default function VaporApp() {
       <Scene />
       <FluidLayer />
 
+      <TopBar openPicker={openPicker} />
+      <LeftRail openPicker={openPicker} />
       <Sidebar />
-      <Controls openPicker={openPicker} />
+
+      {/* Footer credit */}
+      <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex h-[30px] items-center justify-center">
+        <span className="text-[10px] tracking-[0.24em] text-text-faint uppercase">
+          © 2026 Vapor OS
+        </span>
+      </footer>
 
       {/* Empty state */}
       <AnimatePresence>
@@ -208,9 +216,7 @@ export default function VaporApp() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`absolute inset-0 z-10 flex items-center justify-center px-6 transition-[padding] duration-300 ${
-              sidebarOpen ? "md:pr-[352px]" : ""
-            }`}
+            className="absolute inset-0 z-10 flex items-center justify-center px-6 pt-[52px] pb-[30px] md:pl-[124px] lg:pr-[328px]"
           >
             <button
               onClick={openPicker}

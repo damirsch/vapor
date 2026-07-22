@@ -19,10 +19,19 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export const SIDEBAR_WIDTH = 320;
-export const SIDEBAR_MARGIN = 16;
-/** Horizontal space the open sidebar occupies from the right edge. */
-export const SIDEBAR_OCCUPY = SIDEBAR_WIDTH + SIDEBAR_MARGIN * 2;
+/* App-chrome layout metrics (px). */
+export const TOPBAR_H = 52;
+export const FOOTER_H = 30;
+
+export const RAIL_WIDTH = 96;
+export const RAIL_MARGIN = 14;
+/** Horizontal space the left thumbnail rail occupies. */
+export const RAIL_OCCUPY = RAIL_WIDTH + RAIL_MARGIN * 2;
+
+export const PANEL_WIDTH = 300;
+export const PANEL_MARGIN = 14;
+/** Horizontal space the right control panel occupies. */
+export const PANEL_OCCUPY = PANEL_WIDTH + PANEL_MARGIN * 2;
 
 interface VaporState {
   images: VaporImage[];
@@ -64,7 +73,9 @@ export const useVaporStore = create<VaporState>((set, get) => ({
   currentIndex: 0,
   mode: "idle",
   settings: { ...DEFAULT_SETTINGS },
-  sidebarOpen: true,
+  // On desktop the panel is always docked (CSS lg override); this only gates the
+  // mobile drawer, which should start closed.
+  sidebarOpen: false,
   dragPx: 0,
   dragging: false,
   vaporProgress: 0,

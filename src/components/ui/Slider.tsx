@@ -8,6 +8,8 @@ interface SliderProps {
   step?: number;
   unit?: string;
   format?: (v: number) => string;
+  /** Optional helper line shown under the slider (ref-1 style). */
+  caption?: string;
   onChange: (v: number) => void;
 }
 
@@ -19,6 +21,7 @@ export default function Slider({
   step = 0.01,
   unit,
   format,
+  caption,
   onChange,
 }: SliderProps) {
   const pct = ((value - min) / (max - min)) * 100;
@@ -26,10 +29,8 @@ export default function Slider({
 
   return (
     <label className="block">
-      <div className="mb-1.5 flex items-baseline justify-between">
-        <span className="text-[11px] font-medium tracking-wide text-text-dim uppercase">
-          {label}
-        </span>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <span className="text-[12px] text-text-dim">{label}</span>
         <span className="font-mono text-[11px] tabular-nums text-text">
           {display}
         </span>
@@ -45,10 +46,15 @@ export default function Slider({
         style={
           {
             "--pct": `${pct}%`,
-            "--fill": "#e7e8ea",
+            "--fill": "var(--accent)",
           } as React.CSSProperties
         }
       />
+      {caption ? (
+        <p className="mt-1.5 text-[10.5px] leading-snug text-text-faint">
+          {caption}
+        </p>
+      ) : null}
     </label>
   );
 }

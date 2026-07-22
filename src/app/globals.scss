@@ -1,0 +1,182 @@
+@use "sass:color";
+
+// ---------------------------------------------------------------------------
+// Design tokens (SCSS side). The runtime CSS custom properties + Tailwind
+// @theme mapping live in globals.css (they must be processed by Tailwind's
+// PostCSS plugin). These SCSS vars are for use inside this file's mixins.
+// ---------------------------------------------------------------------------
+$text: #e7e8ea;
+$line: rgba(255, 255, 255, 0.08);
+$line-strong: rgba(255, 255, 255, 0.14);
+$accent: #f4f5f7;
+
+$shadow-panel: 0 24px 60px -20px rgba(0, 0, 0, 0.65);
+$thumb-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+
+// ---------------------------------------------------------------------------
+// Base
+// ---------------------------------------------------------------------------
+* {
+  box-sizing: border-box;
+}
+
+button,
+[role="button"],
+label {
+  &:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: $text;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  background-color: #0a0a0b;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+// ---------------------------------------------------------------------------
+// Glass surface — heavier frost, neutral tint, soft top highlight.
+// ---------------------------------------------------------------------------
+.glass {
+  background: linear-gradient(
+    180deg,
+    rgba(28, 28, 30, 0.6) 0%,
+    rgba(16, 16, 18, 0.55) 100%
+  );
+  backdrop-filter: blur(28px) saturate(130%);
+  -webkit-backdrop-filter: blur(28px) saturate(130%);
+  border: 1px solid $line;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 30px 70px -24px rgba(0, 0, 0, 0.7);
+
+  &-hover {
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+
+    &:hover {
+      border-color: $line-strong;
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+  }
+}
+
+// Slightly less transparent variant for the docked panels (better legibility
+// over bright smoke) while still clearly glassy.
+.glass-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(24, 24, 26, 0.72) 0%,
+    rgba(13, 13, 15, 0.68) 100%
+  );
+  backdrop-filter: blur(32px) saturate(130%);
+  -webkit-backdrop-filter: blur(32px) saturate(130%);
+  border: 1px solid $line;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 30px 80px -28px rgba(0, 0, 0, 0.75);
+}
+
+// ---------------------------------------------------------------------------
+// Custom range slider
+// ---------------------------------------------------------------------------
+.v-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--fill, #{$text}) var(--pct, 50%),
+      rgba(255, 255, 255, 0.1) var(--pct, 50%)
+    );
+  }
+
+  &::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  // Capsule handle (ref-1 style): a tall rounded pill rather than a round dot.
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -7px;
+    height: 18px;
+    width: 9px;
+    border-radius: 5px;
+    background: $accent;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    box-shadow: $thumb-shadow;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+
+    &:hover {
+      transform: scaleY(1.08);
+    }
+  }
+
+  &::-moz-range-thumb {
+    height: 17px;
+    width: 8px;
+    border: none;
+    border-radius: 5px;
+    background: $accent;
+    box-shadow: $thumb-shadow;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Thin scrollbar
+// ---------------------------------------------------------------------------
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}

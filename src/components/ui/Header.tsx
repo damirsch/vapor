@@ -96,16 +96,17 @@ export default function Header() {
 		<>
 			<header
 				data-no-swipe
-				className='top-0 z-50 absolute inset-x-0 flex justify-between items-center gap-3 px-6 h-[52px] pointer-events-auto glass-header'
+				className='top-0 z-50 absolute inset-x-0 flex justify-between items-center gap-3 px-6 h-[52px] glass-header'
 			>
 				{/* Brand */}
-				<div className='flex items-center gap-2.5 select-none shrink-0'>
-					<span className='bg-white shadow-[0_0_10px_2px_rgba(255,255,255,0.55)] rounded-full w-2 h-2' />
-					<span className='font-semibold text-text sm:text-[15px] text-sm'>Vapor&nbsp;OS</span>
+				<div className='z-10 relative flex items-center gap-1 shrink-0'>
+					{/* eslint-disable-next-line @next/next/no-img-element */}
+					<img src='/logo.svg' alt='' aria-hidden className='-ml-1 w-5 sm:w-6 pointer-events-none' />
+					<span className='font-semibold text-text sm:text-[15px] text-sm'>Vapor OS</span>
 				</div>
 
 				{/* Center title — centered within the free area between rail and panel. */}
-				<div className='hidden absolute inset-x-0 md:flex justify-center items-center lg:pr-[328px] md:pl-[140px] pointer-events-none'>
+				<div className='hidden absolute inset-x-0 md:flex justify-center items-center lg:pr-[328px] md:pl-[140px]'>
 					{hasImages && current ? (
 						<div className='flex items-center gap-2'>
 							<span className='max-w-[280px] font-medium text-sm truncate'>{current.name}</span>
@@ -119,7 +120,7 @@ export default function Header() {
 				</div>
 
 				{/* Cigarette mode toggle */}
-				<div className='flex items-center gap-2 shrink-0'>
+				<div className='z-10 relative flex items-center gap-2 shrink-0'>
 					<Cigarette size={15} />
 					<span className='font-medium text-[13px] whitespace-nowrap'>Cigarette mode</span>
 					<Switch

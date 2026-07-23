@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "Vapor OS — dissolve images into light",
 	description:
-		"Upload an image and vaporize it into drifting colored smoke, or switch to cigarette mode to burn it away like paper. A real-time WebGL playground",
+		"A real-time WebGL playground. Upload any image and vaporize it into drifting colored smoke, or burn it away",
 }
 
 export const viewport: Viewport = {

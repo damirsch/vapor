@@ -279,7 +279,7 @@ void main() {
   if (depth < 0.0) {
     float a = tex.a * uOpacity;
     if (a < 0.01) discard;
-    float lead = smoothstep(-uCharW * 0.7, 0.0, depth);
+    float lead = smoothstep(-uCharW * 0.3, 0.0, depth);
     vec3 rgb = mix(tex.rgb, vec3(0.02), lead * 0.8);
     gl_FragColor = vec4(rgb, a);
     return;

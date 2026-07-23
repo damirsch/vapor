@@ -59,12 +59,12 @@ const TRAIL_MIN_DIST = 0.012
  */
 const BURN_EMBER_W = 0.02
 /** Glow sits this far *behind* the black leading front (bigger = more lag). */
-const BURN_EMBER_PEAK = 0.075
+const BURN_EMBER_PEAK = 0.02
 /** Noise-driven extra depth so the ember periodically lags further back. */
-const BURN_EMBER_LAG = 0.03
+const BURN_EMBER_LAG = 0.1
 /** Small so the paper turns black almost immediately at the front. */
 const BURN_CHAR_W = 0.05
-const BURN_HOLE_W = 0.2
+const BURN_HOLE_W = 0.16
 const BURN_EMBER_INTENSITY = 1.7
 /**
  * Number of ignition points seeded across the bottom edge when a burn is started
@@ -353,12 +353,7 @@ function ImageMesh({
 		// Button-triggered burn (no cigarette): the first frame of a vaporize cycle
 		// ignites several staggered points across the bottom, so the fire starts
 		// from a few distinct spots and climbs upward as they spread and merge.
-		if (
-			isCurrent &&
-			status === "vaporizing" &&
-			!hasSeeded.current &&
-			getBurnSeeds(src).length === 0
-		) {
+		if (isCurrent && status === "vaporizing" && !hasSeeded.current && getBurnSeeds(src).length === 0) {
 			for (let i = 0; i < BURN_BOTTOM_SEEDS; i++) {
 				const u = (i + 0.5) / BURN_BOTTOM_SEEDS + (Math.random() - 0.5) * 0.05
 				const v = 0.03 + Math.random() * 0.06

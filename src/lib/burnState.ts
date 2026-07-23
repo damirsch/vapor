@@ -38,7 +38,7 @@ export const BURN_SPREAD_BASE = 0.15
 export const burnPointer = { down: false }
 
 /** Width of the ragged front's noise displacement (shared by both contexts). */
-export const BURN_RAGGED = 0.05
+export const BURN_RAGGED = 0.1
 /** Spatial frequency of the front noise (shared by both contexts). */
 export const BURN_NOISE_SCALE = 5.0
 

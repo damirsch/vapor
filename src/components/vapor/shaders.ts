@@ -256,9 +256,13 @@ float fbm(vec2 p) {
 void main() {
   vec4 tex = texture2D(uTex, vUv);
 
-  // Domain-warped noise → an organic, ragged burn edge.
+  // Domain-warped multi-octave noise → a lobed, fingered burn edge that breaks
+  // up the circle. A coarse warp makes big irregular lobes; a finer octave adds
+  // ragged detail on top so the front never reads as a clean growing radius.
   vec2 w = vec2(fbm(vUv * uNoiseScale), fbm(vUv * uNoiseScale + 5.2));
-  float n = fbm(vUv * uNoiseScale + w * 1.5);
+  float nCoarse = fbm(vUv * uNoiseScale + w * 2.5);
+  float nFine = fbm(vUv * uNoiseScale * 3.7 + 19.0);
+  float n = nCoarse * 0.7 + nFine * 0.3;
 
   // How far inside the nearest seed's advancing front this fragment sits.
   float depth = -1.0;
@@ -304,10 +308,12 @@ void main() {
   float flick = 0.85 + 0.15 * vnoise(vUv * 36.0 + uTime * 7.0);
   ember *= flick;
 
-  // Red at the cooler fringe → a warm orange-yellow only at the hottest core.
-  // Biased toward red: less yellow overall, yellow reserved for peak intensity.
-  vec3 emberCol = mix(vec3(1.0, 0.10, 0.0), vec3(1.0, 0.62, 0.12),
-                      smoothstep(0.3, 0.92, ember));
+  // Colour by "heat", but break the heat up with noise so the rim isn't one even
+  // line: some patches glow yellow-hot, others stay deep red, varying in space
+  // and time — like a real uneven burn.
+  float heatNoise = fbm(vUv * uNoiseScale * 2.2 + vec2(uTime * 0.4, uTime * -0.3));
+  float heat = clamp(smoothstep(0.25, 0.9, ember) + (heatNoise - 0.5) * 0.95, 0.0, 1.0);
+  vec3 emberCol = mix(vec3(1.0, 0.09, 0.0), vec3(1.0, 0.66, 0.14), heat);
   vec3 col = charred + emberCol * ember * uEmberIntensity;
 
   float a = tex.a * uOpacity * (1.0 - hole);

@@ -41,8 +41,8 @@ const COLOR_INTENSITY = 0.15
 const COLOR_CHANGE_MS = 100
 
 /* Cigarette burn smoke — faint, dim, plain grey (weaker than the vapor smoke). */
-const BURN_SMOKE_COLOR: [number, number, number] = [0.18, 0.18, 0.2]
-const BURN_SMOKE_AMOUNT = 0.07
+const BURN_SMOKE_COLOR: [number, number, number] = [0.22, 0.22, 0.24]
+const BURN_SMOKE_AMOUNT = 0.1
 /** UV width of the combustion band that emits smoke (sits over the char zone). */
 const BURN_SMOKE_FRONT = 0.07
 /** Upward buoyancy injected into the smoke — a stronger, straighter jet up. */

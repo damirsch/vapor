@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+  Flame,
   ImagePlus,
   RotateCcw,
   SlidersHorizontal,
@@ -19,6 +20,7 @@ export default function BottomBar({ openPicker }: BottomBarProps) {
   const images = useVaporStore((s) => s.images);
   const currentIndex = useVaporStore((s) => s.currentIndex);
   const mode = useVaporStore((s) => s.mode);
+  const effect = useVaporStore((s) => s.settings.effect);
   const vaporizeCurrent = useVaporStore((s) => s.vaporizeCurrent);
   const vaporizeAll = useVaporStore((s) => s.vaporizeAll);
   const reset = useVaporStore((s) => s.reset);
@@ -32,6 +34,10 @@ export default function BottomBar({ openPicker }: BottomBarProps) {
   const anyIdle = images.some((i) => i.status === "idle");
   const anyTouched = images.some((i) => i.status !== "idle");
   const canVaporize = !isPlaying && current?.status === "idle";
+
+  const cig = effect === "cigarette";
+  const oneLabel = cig ? "Burn" : "Vaporize";
+  const allLabel = cig ? "Burn all" : "Vaporize all";
 
   return (
     <motion.div
@@ -59,8 +65,8 @@ export default function BottomBar({ openPicker }: BottomBarProps) {
           disabled={!canVaporize}
           className="font-semibold"
         >
-          <Wand2 size={16} />
-          <span className="hidden sm:inline">Vaporize</span>
+          {cig ? <Flame size={16} /> : <Wand2 size={16} />}
+          <span className="hidden sm:inline">{oneLabel}</span>
         </Button>
 
         <Button
@@ -68,8 +74,8 @@ export default function BottomBar({ openPicker }: BottomBarProps) {
           onClick={vaporizeAll}
           disabled={isPlaying || !anyIdle}
         >
-          <Wind size={16} />
-          <span className="hidden sm:inline">Vaporize all</span>
+          {cig ? <Flame size={16} /> : <Wind size={16} />}
+          <span className="hidden sm:inline">{allLabel}</span>
         </Button>
 
         <Button

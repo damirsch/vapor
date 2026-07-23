@@ -9,6 +9,7 @@ import Sidebar from "@/components/ui/Sidebar";
 import Header from "@/components/ui/Header";
 import BottomBar from "@/components/ui/BottomBar";
 import LeftRail from "@/components/ui/LeftRail";
+import CigaretteCursor from "@/components/ui/CigaretteCursor";
 
 const Scene = dynamic(() => import("@/components/vapor/Scene"), {
   ssr: false,
@@ -19,6 +20,7 @@ const FluidLayer = dynamic(() => import("@/components/vapor/FluidLayer"), {
 
 export default function VaporApp() {
   const images = useVaporStore((s) => s.images);
+  const effect = useVaporStore((s) => s.settings.effect);
   const addFiles = useVaporStore((s) => s.addFiles);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -105,6 +107,9 @@ export default function VaporApp() {
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    // In cigarette mode a press means "burn here", so don't hijack it for the
+    // filmstrip swipe navigation.
+    if (effect === "cigarette") return;
     const target = e.target as HTMLElement | null;
     if (target?.closest("[data-no-swipe]")) return;
     if (useVaporStore.getState().images.length < 2) return;
@@ -184,9 +189,13 @@ export default function VaporApp() {
 
   const hasImages = images.length > 0;
 
+  const cigarette = effect === "cigarette";
+
   return (
     <main
-      className="relative h-dvh w-screen touch-none overflow-hidden"
+      className={`relative h-dvh w-screen touch-none overflow-hidden${
+        cigarette ? " cursor-cig" : ""
+      }`}
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -203,6 +212,7 @@ export default function VaporApp() {
       <LeftRail openPicker={openPicker} />
       <Sidebar />
       <BottomBar openPicker={openPicker} />
+      {cigarette && <CigaretteCursor />}
 
       {/* Empty state */}
       <AnimatePresence>

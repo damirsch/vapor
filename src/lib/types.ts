@@ -11,6 +11,9 @@ export type SweepDirection = "up" | "down" | "left" | "right" | "diagonal";
 
 export type PlaybackMode = "idle" | "single" | "all";
 
+/** Which dissolve effect is active. */
+export type EffectMode = "vapor" | "cigarette";
+
 export interface Settings {
   /** How fast the sweep travels (progress units per second). */
   speed: number;
@@ -34,6 +37,8 @@ export interface Settings {
   delay: number;
   /** Direction the sweep bar travels. */
   direction: SweepDirection;
+  /** Active dissolve effect: the classic vapor sweep or the cigarette burn. */
+  effect: EffectMode;
   /**
    * Whether the cursor paints its own colored swirls. When off, the pointer
    * still stirs the fluid (so it keeps affecting vaporized smoke) but adds no
@@ -54,6 +59,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hoverForce: 0.2,
   delay: 0.3,
   direction: "up",
+  effect: "vapor",
   cursorSmoke: false,
 };
 

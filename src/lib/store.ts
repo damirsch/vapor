@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { clearBurn } from "./burnState";
 import {
   DEFAULT_SETTINGS,
   type PlaybackMode,
@@ -111,6 +112,7 @@ export const useVaporStore = create<VaporState>((set, get) => ({
       if (idx === -1) return s;
       const target = s.images[idx];
       if (target.src.startsWith("blob:")) URL.revokeObjectURL(target.src);
+      clearBurn(target.src);
       const images = s.images.filter((i) => i.id !== id);
       let currentIndex = s.currentIndex;
       if (idx < currentIndex) currentIndex -= 1;
@@ -138,6 +140,7 @@ export const useVaporStore = create<VaporState>((set, get) => ({
     get().images.forEach((i) => {
       if (i.src.startsWith("blob:")) URL.revokeObjectURL(i.src);
     });
+    clearBurn();
     set({ images: [], currentIndex: 0, mode: "idle" });
   },
 
@@ -222,6 +225,7 @@ export const useVaporStore = create<VaporState>((set, get) => ({
 
   reset: () => {
     clearNextTimer();
+    clearBurn();
     set((s) => ({
       images: s.images.map((img) => ({ ...img, status: "idle" as const })),
       currentIndex: 0,

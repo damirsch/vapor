@@ -199,6 +199,123 @@ void main() {
 }
 `
 
+/**
+ * Cigarette burn: the paper is consumed by a union of expanding ignition
+ * "seeds". For each fragment we find how far it lies *inside* the nearest
+ * seed's front (`depth`); a domain-warped noise makes that front ragged. The
+ * depth then drives the look: a hot ember rim right at the front → charring →
+ * a burned-through hole. Intact paper (depth < 0) shows the image untouched.
+ */
+export const BURN_FRAGMENT = /* glsl */ `
+precision highp float;
+
+#define MAX_SEEDS 64
+
+uniform sampler2D uTex;
+uniform float uOpacity;
+uniform float uTime;
+uniform vec3 uSeeds[MAX_SEEDS];   // xy = center (image uv), z = birth time (s)
+uniform int uSeedCount;
+uniform float uAspect;            // width / height, keeps the front circular
+uniform float uSpread;            // front radius growth (uv height units / s)
+uniform float uRagged;            // noise displacement of the front
+uniform float uNoiseScale;
+uniform float uEmberW;            // ember glow band width
+uniform float uEmberPeak;         // depth (behind the black front) of the glow
+uniform float uEmberLag;          // extra noise depth so the ember lags at times
+uniform float uCharW;             // depth over which paper darkens (scorch)
+uniform float uHoleW;             // depth at which it burns through
+uniform float uEmberIntensity;
+
+varying vec2 vUv;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+float fbm(vec2 p) {
+  float s = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 4; i++) {
+    s += a * vnoise(p);
+    p *= 2.0;
+    a *= 0.5;
+  }
+  return s;
+}
+
+void main() {
+  vec4 tex = texture2D(uTex, vUv);
+
+  // Domain-warped noise → an organic, ragged burn edge.
+  vec2 w = vec2(fbm(vUv * uNoiseScale), fbm(vUv * uNoiseScale + 5.2));
+  float n = fbm(vUv * uNoiseScale + w * 1.5);
+
+  // How far inside the nearest seed's advancing front this fragment sits.
+  float depth = -1.0;
+  for (int i = 0; i < MAX_SEEDS; i++) {
+    if (i >= uSeedCount) break;
+    vec3 s = uSeeds[i];
+    float age = uTime - s.z;
+    if (age <= 0.0) continue;
+    float radius = uSpread * age;
+    vec2 dpt = vUv - s.xy;
+    dpt.x *= uAspect;
+    depth = max(depth, radius - length(dpt));
+  }
+  depth += (n - 0.5) * uRagged;
+
+  // Intact paper — a dark scorch grows into the paper ahead of the front,
+  // reaching LEAD_MAX (0.8) right at the edge (depth = 0).
+  if (depth < 0.0) {
+    float a = tex.a * uOpacity;
+    if (a < 0.01) discard;
+    float lead = smoothstep(-uCharW * 1.5, 0.0, depth);
+    vec3 rgb = mix(tex.rgb, vec3(0.02), lead * 0.8);
+    gl_FragColor = vec4(rgb, a);
+    return;
+  }
+
+  // Burned through.
+  float hole = smoothstep(uHoleW * 0.85, uHoleW, depth);
+  if (hole >= 0.999) discard;
+
+  // Continue darkening from the leading scorch's 0.8 (at depth = 0) up to fully
+  // black — starting at 0.8, not 0, so there's no bright image ring at the seam.
+  float darken = mix(0.8, 1.0, smoothstep(0.0, uCharW, depth));
+  vec3 charred = mix(tex.rgb, vec3(0.02), darken);
+
+  // Crisp red→yellow ember, sitting BEHIND the black front at uEmberPeak. A slow
+  // low-frequency noise pushes it deeper here and there so it periodically lags
+  // further behind the char instead of tracking the edge at a constant offset.
+  float pn = fbm(vUv * uNoiseScale * 1.4 + vec2(uTime * 0.3, uTime * -0.2));
+  float peak = uEmberPeak + pn * uEmberLag;
+  float dd = depth - peak;
+  float ember = exp(-dd * dd / (uEmberW * uEmberW));
+  float flick = 0.85 + 0.15 * vnoise(vUv * 36.0 + uTime * 7.0);
+  ember *= flick;
+
+  // Red at the cooler fringe → a warm orange-yellow only at the hottest core.
+  // Biased toward red: less yellow overall, yellow reserved for peak intensity.
+  vec3 emberCol = mix(vec3(1.0, 0.10, 0.0), vec3(1.0, 0.62, 0.12),
+                      smoothstep(0.3, 0.92, ember));
+  vec3 col = charred + emberCol * ember * uEmberIntensity;
+
+  float a = tex.a * uOpacity * (1.0 - hole);
+  if (a < 0.01) discard;
+  gl_FragColor = vec4(col, a);
+}
+`
+
 export const PLANE_FRAGMENT = /* glsl */ `
 precision highp float;
 

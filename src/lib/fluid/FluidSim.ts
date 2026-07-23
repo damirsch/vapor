@@ -249,6 +249,109 @@ const emitVelocityShader = `
   }
 `
 
+// Shared value-noise fbm for the cigarette burn front (matches the paper
+// shader's raggedness so smoke rises from the same organic edge).
+const burnNoiseChunk = `
+  float bHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float bNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = bHash(i);
+    float b = bHash(i + vec2(1.0, 0.0));
+    float c = bHash(i + vec2(0.0, 1.0));
+    float d = bHash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  }
+  float bFbm(vec2 p) {
+    float s = 0.0; float a = 0.5;
+    for (int i = 0; i < 4; i++) { s += a * bNoise(p); p *= 2.0; a *= 0.5; }
+    return s;
+  }
+  // Signed depth inside the nearest seed's advancing burn front (ragged).
+  float burnDepth(vec2 t) {
+    vec2 w = vec2(bFbm(t * uNoiseScale), bFbm(t * uNoiseScale + 5.2));
+    float n = bFbm(t * uNoiseScale + w * 1.5);
+    float depth = -1.0;
+    for (int i = 0; i < 64; i++) {
+      if (i >= uSeedCount) break;
+      vec3 s = uSeeds[i];
+      float age = uTime - s.z;
+      if (age <= 0.0) continue;
+      float radius = uSpread * age;
+      vec2 dpt = t - s.xy;
+      dpt.x *= uAspect;
+      depth = max(depth, radius - length(dpt));
+    }
+    return depth + (n - 0.5) * uRagged;
+  }
+`
+
+// Inject faint grey dye along the active combustion band of the burn front.
+const emitBurnDyeShader = `
+  precision highp float;
+  precision highp sampler2D;
+  varying vec2 vUv;
+  uniform sampler2D uTarget;
+  uniform vec4 uRect;        // image rect in screen uv (y up)
+  uniform vec3 uSeeds[64];
+  uniform int uSeedCount;
+  uniform float uTime;
+  uniform float uAspect;
+  uniform float uSpread;
+  uniform float uFront;      // width of the smoke-emitting band
+  uniform float uRagged;
+  uniform float uNoiseScale;
+  uniform vec3 uColor;
+  uniform float uAmount;
+  ${burnNoiseChunk}
+  void main () {
+    vec3 base = texture2D(uTarget, vUv).rgb;
+    vec2 t = (vUv - uRect.xy) / max(uRect.zw - uRect.xy, vec2(0.0001));
+    vec3 add = vec3(0.0);
+    if (t.x > 0.0 && t.x < 1.0 && t.y > 0.0 && t.y < 1.0) {
+      float depth = burnDepth(t);
+      float band = smoothstep(0.0, uFront * 0.5, depth) *
+                   (1.0 - smoothstep(uFront * 0.5, uFront, depth));
+      add = uColor * band * uAmount;
+    }
+    gl_FragColor = vec4(base + add, 1.0);
+  }
+`
+
+// Push upward buoyancy (+ jitter) along the same band so the smoke rises.
+const emitBurnVelShader = `
+  precision highp float;
+  precision highp sampler2D;
+  varying vec2 vUv;
+  uniform sampler2D uTarget;
+  uniform vec4 uRect;
+  uniform vec3 uSeeds[64];
+  uniform int uSeedCount;
+  uniform float uTime;
+  uniform float uAspect;
+  uniform float uSpread;
+  uniform float uFront;
+  uniform float uRagged;
+  uniform float uNoiseScale;
+  uniform float uRise;
+  uniform float uJitter;
+  ${burnNoiseChunk}
+  void main () {
+    vec2 base = texture2D(uTarget, vUv).xy;
+    vec2 t = (vUv - uRect.xy) / max(uRect.zw - uRect.xy, vec2(0.0001));
+    vec2 add = vec2(0.0);
+    if (t.x > 0.0 && t.x < 1.0 && t.y > 0.0 && t.y < 1.0) {
+      float depth = burnDepth(t);
+      float band = smoothstep(0.0, uFront * 0.5, depth) *
+                   (1.0 - smoothstep(uFront * 0.5, uFront, depth));
+      float j = fract(sin(dot(vUv, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+      add = vec2(j * uJitter, uRise) * band;
+    }
+    gl_FragColor = vec4(base + add, 0.0, 1.0);
+  }
+`
+
 // Continuously push the velocity field with a constant wind plus an evolving
 // curl-noise field. This is what makes the smoke feel alive instead of static:
 // even after the sweep is gone, the dye keeps drifting and swirling with "wind".
@@ -672,6 +775,8 @@ export class FluidSim {
 		punchDye: Program
 		emitDye: Program
 		emitVel: Program
+		emitBurnDye: Program
+		emitBurnVel: Program
 		force: Program
 		advection: Program
 		divergence: Program
@@ -730,6 +835,8 @@ export class FluidSim {
 				punchDye: new Program(gl, vs, punchDyeShader),
 				emitDye: new Program(gl, vs, emitDyeShader),
 				emitVel: new Program(gl, vs, emitVelocityShader),
+				emitBurnDye: new Program(gl, vs, emitBurnDyeShader),
+				emitBurnVel: new Program(gl, vs, emitBurnVelShader),
 				force: new Program(gl, vs, forceShader),
 				advection: new Program(gl, vs, advectionShader),
 				divergence: new Program(gl, vs, divergenceShader),
@@ -980,14 +1087,21 @@ export class FluidSim {
 	}
 
 	/** Splat velocity (+optional dye color) at screen pixel coords. */
-	splat(x: number, y: number, dx: number, dy: number, color?: [number, number, number]) {
+	splat(
+		x: number,
+		y: number,
+		dx: number,
+		dy: number,
+		color?: [number, number, number],
+		radiusMul = 1
+	) {
 		const gl = this.gl
 		const p = this.programs.splat
 		p.bind()
 		const aspect = this.canvas.width / this.canvas.height
 		gl.uniform1f(p.uniforms.aspectRatio, aspect)
 		gl.uniform2f(p.uniforms.point, x / this.canvas.width, 1 - y / this.canvas.height)
-		gl.uniform1f(p.uniforms.radius, this.config.SPLAT_RADIUS / 100)
+		gl.uniform1f(p.uniforms.radius, (this.config.SPLAT_RADIUS * radiusMul) / 100)
 
 		gl.uniform1i(p.uniforms.uTarget, this.velocity.read.attach(0))
 		gl.uniform3f(p.uniforms.color, dx, -dy, 0)
@@ -1074,6 +1188,64 @@ export class FluidSim {
 		gl.uniform2f(vel.uniforms.uDir, dir[0], dir[1])
 		gl.uniform1f(vel.uniforms.uProgress, progress)
 		gl.uniform1f(vel.uniforms.uEdge, edge)
+		gl.uniform1f(vel.uniforms.uRise, rise)
+		gl.uniform1f(vel.uniforms.uJitter, jitter)
+		this.blit(this.velocity.write)
+		this.velocity.swap()
+	}
+
+	/**
+	 * Emit faint grey smoke + upward buoyancy along the cigarette burn front.
+	 * `seeds` is a flat vec3 array (xy = image uv, z = birth time), `count` its
+	 * active length. `rect` is the image's on-screen rectangle in uv (y up).
+	 */
+	emitBurn(
+		rect: [number, number, number, number],
+		seeds: Float32Array,
+		count: number,
+		time: number,
+		aspect: number,
+		spread: number,
+		front: number,
+		ragged: number,
+		noiseScale: number,
+		color: [number, number, number],
+		amount: number,
+		rise: number,
+		jitter: number
+	) {
+		if (count <= 0) return
+		const gl = this.gl
+
+		const dye = this.programs.emitBurnDye
+		dye.bind()
+		gl.uniform1i(dye.uniforms.uTarget, this.density.read.attach(0))
+		gl.uniform4f(dye.uniforms.uRect, rect[0], rect[1], rect[2], rect[3])
+		gl.uniform3fv(dye.uniforms["uSeeds[0]"], seeds)
+		gl.uniform1i(dye.uniforms.uSeedCount, count)
+		gl.uniform1f(dye.uniforms.uTime, time)
+		gl.uniform1f(dye.uniforms.uAspect, aspect)
+		gl.uniform1f(dye.uniforms.uSpread, spread)
+		gl.uniform1f(dye.uniforms.uFront, front)
+		gl.uniform1f(dye.uniforms.uRagged, ragged)
+		gl.uniform1f(dye.uniforms.uNoiseScale, noiseScale)
+		gl.uniform3f(dye.uniforms.uColor, color[0], color[1], color[2])
+		gl.uniform1f(dye.uniforms.uAmount, amount)
+		this.blit(this.density.write)
+		this.density.swap()
+
+		const vel = this.programs.emitBurnVel
+		vel.bind()
+		gl.uniform1i(vel.uniforms.uTarget, this.velocity.read.attach(0))
+		gl.uniform4f(vel.uniforms.uRect, rect[0], rect[1], rect[2], rect[3])
+		gl.uniform3fv(vel.uniforms["uSeeds[0]"], seeds)
+		gl.uniform1i(vel.uniforms.uSeedCount, count)
+		gl.uniform1f(vel.uniforms.uTime, time)
+		gl.uniform1f(vel.uniforms.uAspect, aspect)
+		gl.uniform1f(vel.uniforms.uSpread, spread)
+		gl.uniform1f(vel.uniforms.uFront, front)
+		gl.uniform1f(vel.uniforms.uRagged, ragged)
+		gl.uniform1f(vel.uniforms.uNoiseScale, noiseScale)
 		gl.uniform1f(vel.uniforms.uRise, rise)
 		gl.uniform1f(vel.uniforms.uJitter, jitter)
 		this.blit(this.velocity.write)
@@ -1181,6 +1353,11 @@ export class FluidSim {
 	/** Live glow strength, driven by cursor speed (0 = no glow). */
 	setBloomGlow(glow: number) {
 		this.config.BLOOM_GLOW = glow
+	}
+
+	/** Toggle the bloom glow pass entirely (off = plain smoke, no glow). */
+	setBloom(enabled: boolean) {
+		this.config.BLOOM = enabled
 	}
 
 	/** Draw the dye to the canvas (transparent where empty). */

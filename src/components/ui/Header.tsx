@@ -1,12 +1,13 @@
 "use client"
 
-import { Download } from "lucide-react"
+import { Cigarette, Wind } from "lucide-react"
 import { useVaporStore } from "@/lib/store"
-import Button from "./Button"
 
 export default function Header() {
 	const images = useVaporStore((s) => s.images)
 	const currentIndex = useVaporStore((s) => s.currentIndex)
+	const effect = useVaporStore((s) => s.settings.effect)
+	const updateSetting = useVaporStore((s) => s.updateSetting)
 
 	const current = images[currentIndex]
 	const hasImages = images.length > 0
@@ -36,15 +37,34 @@ export default function Header() {
 				)}
 			</div>
 
-			{/* Export — disabled with a "Coming soon" tooltip on hover. */}
-			<div className='group relative shrink-0'>
-				<Button variant='ghost' size='sm' disabled aria-disabled='true'>
-					<Download size={15} />
-					<span className='hidden sm:inline'>Export</span>
-				</Button>
-				<span className='top-[calc(100%+8px)] right-0 z-40 absolute bg-bg-1 opacity-0 group-hover:opacity-100 shadow-lg px-2.5 py-1 border border-line rounded-lg text-[11px] text-text-dim whitespace-nowrap transition-opacity duration-150 pointer-events-none'>
-					Coming soon
-				</span>
+			{/* Effect mode — segmented toggle between vapor and the cigarette burn. */}
+			<div className='flex items-center gap-1 bg-white/[0.03] p-1 border border-white/8 rounded-xl shrink-0'>
+				<button
+					onClick={() => updateSetting("effect", "vapor")}
+					aria-pressed={effect === "vapor"}
+					title='Vapor'
+					className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
+						effect === "vapor"
+							? "bg-white text-black"
+							: "text-text-dim hover:text-text"
+					}`}
+				>
+					<Wind size={14} />
+					<span className='hidden sm:inline'>Vapor</span>
+				</button>
+				<button
+					onClick={() => updateSetting("effect", "cigarette")}
+					aria-pressed={effect === "cigarette"}
+					title='Cigarette'
+					className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
+						effect === "cigarette"
+							? "bg-white text-black"
+							: "text-text-dim hover:text-text"
+					}`}
+				>
+					<Cigarette size={14} />
+					<span className='hidden sm:inline'>Cigarette</span>
+				</button>
 			</div>
 		</header>
 	)

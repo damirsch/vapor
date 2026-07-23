@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { BURN_NOISE_SCALE, BURN_RAGGED, BURN_SPREAD_BASE, burnNow, MAX_SEEDS, packBurnSeeds } from "@/lib/burnState"
 import { loadImageMeta } from "@/lib/imageParticles"
 import { useVaporStore } from "@/lib/store"
 import { directionToVec } from "@/lib/types"
@@ -38,6 +39,34 @@ const REF_FORCE = 5
 const COLOR_INTENSITY = 0.15
 /** Reference picks a fresh random colour every 100ms. */
 const COLOR_CHANGE_MS = 100
+
+/* Cigarette burn smoke — faint, dim, plain grey (weaker than the vapor smoke). */
+const BURN_SMOKE_COLOR: [number, number, number] = [0.18, 0.18, 0.2]
+const BURN_SMOKE_AMOUNT = 0.07
+/** UV width of the combustion band that emits smoke (sits over the char zone). */
+const BURN_SMOKE_FRONT = 0.07
+/** Upward buoyancy injected into the smoke — a stronger, straighter jet up. */
+const BURN_SMOKE_RISE = 12
+const BURN_SMOKE_JITTER = 2
+
+/*
+ * Cigarette tip wisp — the thin, continuous curl of smoke that always rises off
+ * the lit tip (independent of the paper burning). Injected straight into the
+ * fluid every frame as a small, thin splat so it reads as a real fluid wisp
+ * (like the reference smoke, only fainter/greyer) instead of discrete DOM dots.
+ */
+const TIP_SMOKE_COLOR: [number, number, number] = [0.05, 0.05, 0.055]
+/** Thinner than the default cursor splat so the column stays wispy. */
+const TIP_SMOKE_RADIUS = 0.4
+/** Upward buoyancy of the tip wisp. */
+const TIP_SMOKE_RISE = 7
+/** Tiny sideways wander — kept small so the column rises fairly straight. */
+const TIP_SMOKE_JITTER = 1.2
+/** How strongly cursor motion blows the wisp the opposite way (the wake). */
+const TIP_SMOKE_WAKE = 0.8
+/** Screen-space offset (px) from the cursor to the glowing tip of the cig. */
+const TIP_OFFSET_X = -2
+const TIP_OFFSET_Y = -4
 
 /** HSV (0..1) → RGB (0..1). */
 function hsv(h: number, s: number, v: number): [number, number, number] {
@@ -94,8 +123,15 @@ export default function FluidLayer() {
 		let curY = 0
 		let curDX = 0
 		let curDY = 0
+		// Decaying estimate of the cursor's velocity, used to blow the cigarette's
+		// smoke into the *opposite* direction (a wake trailing behind the tip).
+		let velX = 0
+		let velY = 0
 		let moved = false
 		let hasCursor = false
+		// Whether the pointer is over the canvas (not hovering the UI chrome). Used
+		// so the cigarette's tip wisp only smokes while it's over the artwork area.
+		let overCanvas = false
 		// Reference-style colour: a random vivid hue refreshed every 100ms.
 		let color = hsv(Math.random(), 1, 1)
 		let lastColorMs = 0
@@ -110,13 +146,18 @@ export default function FluidLayer() {
 			curX = x
 			curY = y
 			hasCursor = true
+			const t = e.target as HTMLElement | null
+			overCanvas = !t?.closest("[data-no-swipe]")
 		}
 		window.addEventListener("pointermove", onMove)
 
 		// Per-image dye texture in the fluid's own GL context.
 		let currentSrc: string | null = null
 		let imageTex: ImageTex | null = null
+		let imageAspect = 1
 		let loadToken = 0
+		// Reused buffer for uploading the burn seeds to the smoke emitter.
+		const seedBuf = new Float32Array(MAX_SEEDS * 3)
 
 		const syncImage = (src: string | null) => {
 			if (src === currentSrc) return
@@ -132,6 +173,7 @@ export default function FluidLayer() {
 				.then((m) => {
 					if (token !== loadToken) return
 					imageTex = sim.createImageTexture(m.image)
+					imageAspect = m.width / m.height
 				})
 				.catch(() => {})
 		}
@@ -141,7 +183,12 @@ export default function FluidLayer() {
 			raf = requestAnimationFrame(loop)
 			const st = useVaporStore.getState()
 			const s = st.settings
+			const cigMode = s.effect === "cigarette"
 			const dt = 0.016
+
+			// Cigarette smoke is plain grey — kill the bloom glow so overlapping
+			// smoke doesn't light up. Vapor mode keeps the reference's glow.
+			sim.setBloom(!cigMode)
 
 			sim.resize(window.innerWidth, window.innerHeight, dpr)
 
@@ -166,25 +213,73 @@ export default function FluidLayer() {
 			// we still splat the velocity (so the pointer keeps stirring vaporized
 			// smoke) but pass no dye, so it paints no coloured swirls of its own.
 			if (moved) {
-				sim.splat(curX * dpr, curY * dpr, curDX * REF_FORCE, curDY * REF_FORCE, s.cursorSmoke ? dye : undefined)
+				if (cigMode) {
+					// Don't stir the fluid at the cursor — stirring drags the smoke
+					// along with the cigarette. We only record the cursor velocity so
+					// the wisp can trail the opposite way (see the tip splat below).
+					velX = curDX
+					velY = curDY
+				} else {
+					const splatDye = s.cursorSmoke ? dye : undefined
+					sim.splat(curX * dpr, curY * dpr, curDX * REF_FORCE, curDY * REF_FORCE, splatDye)
+				}
 				moved = false
 			}
+			// Relax the wake toward zero so a stationary cigarette smokes straight up.
+			velX *= 0.8
+			velY *= 0.8
 
-			// Emit dye + buoyancy from the dissolving image along the sweep band.
-			// This only runs during an active vaporize; when idle the sim behaves
-			// exactly like the reference (pure step + cursor splat, no extra forces).
-			if (imageTex && cur && cur.status !== "idle") {
-				sim.emit(
-					imageTex,
-					st.imageRect,
-					directionToVec(s.direction),
-					st.vaporProgress,
-					s.edge,
-					EMIT_AMOUNT,
-					EMIT_RISE * s.strength,
-					EMIT_JITTER * (0.5 + s.turbulence),
-					IMAGE_DYE_BRIGHTNESS
+			// Continuous grey wisp off the lit cigarette tip: a thin column that rises
+			// straight up (no glow, minimal swirl) and gets blown to the side opposite
+			// the cigarette's motion — like real smoke left behind as you move it.
+			if (cigMode && hasCursor && overCanvas) {
+				const jx = (Math.random() - 0.5) * TIP_SMOKE_JITTER
+				sim.splat(
+					(curX + TIP_OFFSET_X) * dpr,
+					(curY + TIP_OFFSET_Y) * dpr,
+					jx - velX * TIP_SMOKE_WAKE,
+					-TIP_SMOKE_RISE - velY * TIP_SMOKE_WAKE,
+					TIP_SMOKE_COLOR,
+					TIP_SMOKE_RADIUS
 				)
+			}
+
+			// Emit smoke from the dissolving image. Only runs during an active burn/
+			// vaporize; when idle the sim behaves exactly like the reference.
+			if (cur && cur.status !== "idle") {
+				if (cigMode) {
+					// Faint grey smoke rising from the ragged, spreading burn front.
+					const count = packBurnSeeds(cur.src, seedBuf)
+					if (count > 0) {
+						sim.emitBurn(
+							st.imageRect,
+							seedBuf,
+							count,
+							burnNow(),
+							imageAspect,
+							BURN_SPREAD_BASE * s.speed,
+							BURN_SMOKE_FRONT,
+							BURN_RAGGED,
+							BURN_NOISE_SCALE,
+							BURN_SMOKE_COLOR,
+							BURN_SMOKE_AMOUNT,
+							BURN_SMOKE_RISE,
+							BURN_SMOKE_JITTER
+						)
+					}
+				} else if (imageTex) {
+					sim.emit(
+						imageTex,
+						st.imageRect,
+						directionToVec(s.direction),
+						st.vaporProgress,
+						s.edge,
+						EMIT_AMOUNT,
+						EMIT_RISE * s.strength,
+						EMIT_JITTER * (0.5 + s.turbulence),
+						IMAGE_DYE_BRIGHTNESS
+					)
+				}
 			}
 
 			sim.step(dt)

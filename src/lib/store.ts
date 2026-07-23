@@ -40,6 +40,9 @@ interface VaporState {
   mode: PlaybackMode;
   settings: Settings;
   sidebarOpen: boolean;
+  /** Mobile: when true, swipe navigation is disabled so you can drag a finger
+   * across the canvas for the effect without flipping to the next image. */
+  swipeLocked: boolean;
   /** Live horizontal drag offset in pixels while a swipe is in progress. */
   dragPx: number;
   /** Whether the user is actively dragging the filmstrip. */
@@ -55,6 +58,7 @@ interface VaporState {
     rect: [number, number, number, number],
   ) => void;
   setSidebarOpen: (open: boolean) => void;
+  setSwipeLocked: (locked: boolean) => void;
   addFiles: (files: File[]) => void;
   removeImage: (id: string) => void;
   reorderImages: (newOrder: VaporImage[]) => void;
@@ -78,6 +82,7 @@ export const useVaporStore = create<VaporState>((set, get) => ({
   // On desktop the panel is always docked (CSS lg override); this only gates the
   // mobile drawer, which should start closed.
   sidebarOpen: false,
+  swipeLocked: false,
   dragPx: 0,
   dragging: false,
   vaporProgress: 0,
@@ -86,6 +91,7 @@ export const useVaporStore = create<VaporState>((set, get) => ({
   setDrag: (px, dragging) => set({ dragPx: px, dragging }),
   setVaporFrame: (progress, rect) => set({ vaporProgress: progress, imageRect: rect }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  setSwipeLocked: (locked) => set({ swipeLocked: locked }),
 
   addFiles: (files) => {
     const imageFiles = files.filter((f) => f.type.startsWith("image/"));
@@ -234,7 +240,22 @@ export const useVaporStore = create<VaporState>((set, get) => ({
   },
 
   updateSetting: (key, value) =>
-    set((s) => ({ settings: { ...s.settings, [key]: value } })),
+    set((s) => {
+      // Switching effect mode gives each mode a clean, interactive slate:
+      // reset statuses to idle and clear any burns. Otherwise a "done" image
+      // carried over from vapor would render whole under the burn shader but
+      // stay un-ignitable (ignition is blocked while status === "done").
+      if (key === "effect" && value !== s.settings.effect) {
+        clearNextTimer();
+        clearBurn();
+        return {
+          settings: { ...s.settings, [key]: value },
+          images: s.images.map((img) => ({ ...img, status: "idle" as const })),
+          mode: "idle",
+        };
+      }
+      return { settings: { ...s.settings, [key]: value } };
+    }),
 
   resetSettings: () => set({ settings: { ...DEFAULT_SETTINGS } }),
 }));

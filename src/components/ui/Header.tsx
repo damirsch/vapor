@@ -101,7 +101,7 @@ export default function Header() {
 				{/* Brand */}
 				<div className='flex items-center gap-2.5 select-none shrink-0'>
 					<span className='bg-white shadow-[0_0_10px_2px_rgba(255,255,255,0.55)] rounded-full w-2 h-2' />
-					<span className='font-semibold text-text text-base'>Vapor&nbsp;OS</span>
+					<span className='font-semibold text-sm text-text sm:text-base'>Vapor&nbsp;OS</span>
 				</div>
 
 				{/* Center title — centered within the free area between rail and panel. */}
@@ -118,14 +118,14 @@ export default function Header() {
 					)}
 				</div>
 
-				{/* Cigarette edition toggle */}
+				{/* Cigarette mode toggle */}
 				<div className='flex items-center gap-2 shrink-0'>
-					<Cigarette size={15} className='text-text-dim' />
-					<span className='font-medium text-text-dim text-[13px] whitespace-nowrap'>Cigarette edition</span>
+					<Cigarette size={15} />
+					<span className='font-medium text-[13px] whitespace-nowrap'>Cigarette mode</span>
 					<Switch
 						checked={on}
 						onChange={(v) => updateSetting("effect", v ? "cigarette" : "vapor")}
-						ariaLabel='Cigarette edition'
+						ariaLabel='Cigarette mode'
 					/>
 				</div>
 			</header>

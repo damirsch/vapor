@@ -28,7 +28,7 @@ export const MAX_SEEDS = 64
  * user's speed multiplier). Shared by the paper shader (three) and the smoke
  * emitter (FluidSim) so both burn at exactly the same rate.
  */
-export const BURN_SPREAD_BASE = 0.15
+export const BURN_SPREAD_BASE = 0.35
 
 /**
  * Whether the pointer is currently pressed over the canvas. The cigarette only

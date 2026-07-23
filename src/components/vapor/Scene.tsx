@@ -1,10 +1,11 @@
 "use client";
+/* eslint-disable react-hooks/immutability */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { PANEL_OCCUPY, RAIL_OCCUPY, useVaporStore } from "@/lib/store";
-import { buildParticleData, loadImageMeta } from "@/lib/imageParticles";
+import { PANEL_OCCUPY, RAIL_OCCUPY, TOPBAR_H, useVaporStore } from "@/lib/store";
+import { buildParticleData, FIT, loadImageMeta } from "@/lib/imageParticles";
 import ParticleImage from "./ParticleImage";
 
 /** Horizontal spacing between images in the filmstrip (world units). */
@@ -13,21 +14,40 @@ const SPACING = 3.4;
 const WINDOW = 1;
 
 /**
- * Shifts the camera sideways so the current image is centered within the area
- * not covered by the sidebar. Nudging the camera (rather than the content)
- * keeps pointer→world math consistent.
+ * Frames the current image: zooms the camera out so the plane always fits the
+ * free area (with a margin) and shifts it sideways to clear the sidebars.
+ * Moving the camera — rather than scaling the meshes — keeps pointer→world /
+ * burn-UV math consistent (they unproject through the live camera).
  */
-function CameraCentering() {
+function CameraRig() {
   const { camera, size, viewport } = useThree();
 
   useFrame(() => {
+    const persp = camera as THREE.PerspectiveCamera;
     const wide = size.width >= 768;
+
+    // Zoom out until the image (max side = FIT world units) fits the available
+    // area minus padding. On narrow/portrait phones the default z=5 shows only
+    // ~2 world units across, so a landscape image (width 3) would spill past
+    // the screen — pulling the camera back keeps it fully on-screen with a gap.
+    const tan = Math.tan(((persp.fov * Math.PI) / 180) / 2);
+    const sidePx = wide ? RAIL_OCCUPY + PANEL_OCCUPY : 0;
+    const padX = wide ? 24 : 16;
+    const padTop = TOPBAR_H + (wide ? 16 : 12);
+    const padBottom = wide ? 98 : 112;
+    const availWpx = Math.max(40, size.width - sidePx - padX * 2);
+    const availHpx = Math.max(40, size.height - padTop - padBottom);
+    // Never zoom in closer than the default distance (keeps desktop framing).
+    const zNeeded = (size.height * FIT) / (2 * tan * Math.min(availWpx, availHpx));
+    const targetZ = Math.max(5, zNeeded);
+    persp.position.z += (targetZ - persp.position.z) * 0.12;
+
     // Center the image in the free area between the left rail and right panel.
     // Positive camera.x shifts the view right => content appears further left.
     const targetPx = wide ? (PANEL_OCCUPY - RAIL_OCCUPY) / 2 : 0;
     const targetWorld = (targetPx / size.width) * viewport.width;
-    camera.position.x += (targetWorld - camera.position.x) * 0.12;
-    camera.updateProjectionMatrix();
+    persp.position.x += (targetWorld - persp.position.x) * 0.12;
+    persp.updateProjectionMatrix();
   });
 
   return null;
@@ -46,12 +66,16 @@ function Strip({
   children: React.ReactNode;
 }) {
   const ref = useRef<THREE.Group>(null);
-  const { viewport, size } = useThree();
+  const { size, camera } = useThree();
 
   useFrame(() => {
     if (!ref.current) return;
     const { dragPx, dragging } = useVaporStore.getState();
-    const worldPerPx = viewport.width / Math.max(1, size.width);
+    // Derive world-per-pixel from the live camera distance so the drag tracks
+    // the finger 1:1 even after the rig has zoomed out on mobile.
+    const persp = camera as THREE.PerspectiveCamera;
+    const visH = 2 * Math.tan(((persp.fov * Math.PI) / 180) / 2) * persp.position.z;
+    const worldPerPx = visH / Math.max(1, size.height);
     const target = -currentIndex * SPACING + dragPx * worldPerPx;
     // Follow the finger tightly while dragging, ease on snap-back.
     const k = dragging ? 0.5 : 0.11;
@@ -99,7 +123,7 @@ export default function Scene() {
         camera={{ position: [0, 0, 5], fov: 45 }}
         style={{ position: "absolute", inset: 0 }}
       >
-        <CameraCentering />
+        <CameraRig />
 
         <Strip currentIndex={currentIndex}>
           {images.map((img, i) =>

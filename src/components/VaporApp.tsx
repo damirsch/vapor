@@ -9,6 +9,8 @@ import Sidebar from "@/components/ui/Sidebar";
 import Header from "@/components/ui/Header";
 import BottomBar from "@/components/ui/BottomBar";
 import LeftRail from "@/components/ui/LeftRail";
+import MobilePager from "@/components/ui/MobilePager";
+import SwipeLock from "@/components/ui/SwipeLock";
 
 const Scene = dynamic(() => import("@/components/vapor/Scene"), {
   ssr: false,
@@ -66,7 +68,8 @@ export default function VaporApp() {
     };
 
     const onWheel = (e: WheelEvent) => {
-      const { images: imgs } = useVaporStore.getState();
+      const { images: imgs, swipeLocked } = useVaporStore.getState();
+      if (swipeLocked) return;
       if (imgs.length < 2) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest("[data-no-swipe]")) return;
@@ -109,6 +112,7 @@ export default function VaporApp() {
     // In cigarette mode a press means "burn here", so don't hijack it for the
     // filmstrip swipe navigation.
     if (effect === "cigarette") return;
+    if (useVaporStore.getState().swipeLocked) return;
     const target = e.target as HTMLElement | null;
     if (target?.closest("[data-no-swipe]")) return;
     if (useVaporStore.getState().images.length < 2) return;
@@ -211,6 +215,8 @@ export default function VaporApp() {
       <LeftRail openPicker={openPicker} />
       <Sidebar />
       <BottomBar openPicker={openPicker} />
+      <MobilePager />
+      <SwipeLock />
 
       {/* Empty state */}
       <AnimatePresence>

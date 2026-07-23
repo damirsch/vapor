@@ -46,7 +46,7 @@ export default function BottomBar({ openPicker }: BottomBarProps) {
 				</Button>
 			</div> */}
 
-			<div className='flex items-center gap-2 md:gap-3 px-3 py-3 rounded-2xl pointer-events-auto glass-panel'>
+			<div className='flex items-center gap-2 px-3 py-3 rounded-2xl pointer-events-auto glass-panel'>
 				{/* Mobile-only: add image (left rail is hidden on small screens) */}
 				<Button variant='ghost' iconOnly onClick={openPicker} aria-label='Add image' className='md:hidden'>
 					<ImagePlus size={17} />

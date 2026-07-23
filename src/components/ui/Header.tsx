@@ -101,7 +101,7 @@ export default function Header() {
 				{/* Brand */}
 				<div className='flex items-center gap-2.5 select-none shrink-0'>
 					<span className='bg-white shadow-[0_0_10px_2px_rgba(255,255,255,0.55)] rounded-full w-2 h-2' />
-					<span className='font-semibold text-sm text-text sm:text-base'>Vapor&nbsp;OS</span>
+					<span className='font-semibold text-text sm:text-[15px] text-sm'>Vapor&nbsp;OS</span>
 				</div>
 
 				{/* Center title — centered within the free area between rail and panel. */}

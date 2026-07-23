@@ -38,7 +38,7 @@ export default function Slider({ label, value, min, max, step = 0.01, unit, form
 					} as React.CSSProperties
 				}
 			/>
-			{caption ? <p className='-mt-1 text-text-faint text-xs leading-snug'>{caption}</p> : null}
+			{caption ? <p className='-mt-0.5 font-medium text-text-faint text-xs'>{caption}</p> : null}
 		</label>
 	)
 }

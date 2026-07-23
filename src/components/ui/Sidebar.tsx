@@ -37,7 +37,7 @@ export default function Sidebar() {
 				}`}
 			>
 				<div className='flex justify-between items-center px-5 pt-4 pb-3'>
-					<span className='font-semibold text-text text-lg'>Controls</span>
+					<span className='font-semibold text-text text-base'>Controls</span>
 					<button
 						onClick={() => setOpen(false)}
 						className='lg:hidden flex justify-center items-center hover:bg-white/5 rounded-lg w-7 h-7 text-text-faint hover:text-text transition-colors cursor-pointer'
@@ -69,7 +69,11 @@ export default function Sidebar() {
 									format={(v) => v.toFixed(2)}
 									caption='Force pushed into the vapor as it lifts off'
 								/>
-								<Toggle label='Cursor smoke' checked={settings.cursorSmoke} onChange={(v) => update("cursorSmoke", v)} />
+								<Toggle
+									label='Cursor trail'
+									checked={settings.cursorSmoke}
+									onChange={(v) => update("cursorSmoke", v)}
+								/>
 								<Slider
 									label='Turbulence'
 									value={settings.turbulence}

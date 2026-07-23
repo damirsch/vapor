@@ -19,27 +19,35 @@ const WINDOW = 1;
  * Moving the camera — rather than scaling the meshes — keeps pointer→world /
  * burn-UV math consistent (they unproject through the live camera).
  */
-function CameraRig() {
+function CameraRig({ imgW, imgH }: { imgW: number; imgH: number }) {
   const { camera, size, viewport } = useThree();
 
   useFrame(() => {
     const persp = camera as THREE.PerspectiveCamera;
     const wide = size.width >= 768;
+    const multi = useVaporStore.getState().images.length > 1;
 
-    // Zoom out until the image (max side = FIT world units) fits the available
-    // area minus padding. On narrow/portrait phones the default z=5 shows only
-    // ~2 world units across, so a landscape image (width 3) would spill past
-    // the screen — pulling the camera back keeps it fully on-screen with a gap.
+    // Fit the CURRENT image (by its real world dimensions, not a FIT×FIT square)
+    // into the free area, pulling the camera back until whichever axis is the
+    // tighter constraint just fits. Using real dims is what lets a tall/narrow
+    // image fill the height instead of being over-shrunk by a width rule that
+    // assumed every image was FIT units wide.
     const tan = Math.tan(((persp.fov * Math.PI) / 180) / 2);
     const sidePx = wide ? RAIL_OCCUPY + PANEL_OCCUPY : 0;
     const padX = wide ? 24 : 16;
-    const padTop = TOPBAR_H + (wide ? 16 : 12);
-    const padBottom = wide ? 98 : 112;
+    // Reserve room for the chrome so the image never sits under it:
+    //  top    → header (+ the mobile swipe-lock pill when multiple images)
+    //  bottom → action bar (+ the mobile page dots when multiple images)
+    const padTop = wide ? TOPBAR_H + 16 : multi ? 96 : 68;
+    const padBottom = wide ? 98 : multi ? 128 : 100;
     const availWpx = Math.max(40, size.width - sidePx - padX * 2);
     const availHpx = Math.max(40, size.height - padTop - padBottom);
-    // Never zoom in closer than the default distance (keeps desktop framing).
-    const zNeeded = (size.height * FIT) / (2 * tan * Math.min(availWpx, availHpx));
-    const targetZ = Math.max(5, zNeeded);
+
+    const zForW = (size.height * imgW) / (2 * tan * availWpx);
+    const zForH = (size.height * imgH) / (2 * tan * availHpx);
+    // Desktop keeps its roomy default framing (floor 5); phones are free to move
+    // closer so portrait images actually fill the available space.
+    const targetZ = Math.max(wide ? 5 : 2, zForW, zForH);
     persp.position.z += (targetZ - persp.position.z) * 0.12;
 
     // Center the image in the free area between the left rail and right panel.
@@ -100,6 +108,23 @@ export default function Scene() {
   const current = images[currentIndex];
   const loading = current ? ready[current.id] === false : false;
 
+  // World dimensions of the current image's plane, so the camera can frame it
+  // by its real aspect (see CameraRig). Defaults to a square until it decodes.
+  const [curDims, setCurDims] = useState<{ w: number; h: number }>({ w: FIT, h: FIT });
+  useEffect(() => {
+    const cur = images[currentIndex];
+    if (!cur) return;
+    let alive = true;
+    loadImageMeta(cur.src)
+      .then((m) => {
+        if (alive) setCurDims({ w: m.width, h: m.height });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [images, currentIndex]);
+
   // Prewarm: neighbors only decode their image + plane size (cheap) so they
   // render instantly when swiped into view. Only the current image prebuilds
   // the heavy particle buffers, since it's the one most likely to vaporize —
@@ -123,7 +148,7 @@ export default function Scene() {
         camera={{ position: [0, 0, 5], fov: 45 }}
         style={{ position: "absolute", inset: 0 }}
       >
-        <CameraRig />
+        <CameraRig imgW={curDims.w} imgH={curDims.h} />
 
         <Strip currentIndex={currentIndex}>
           {images.map((img, i) =>

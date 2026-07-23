@@ -71,7 +71,7 @@ const BURN_EMBER_INTENSITY = 1.7
  * from the Burn button (no cigarette). Their merging fronts rise up the sheet,
  * giving a bottom-to-top burn like the vapor sweep — but with our char/ember.
  */
-const BURN_BOTTOM_SEEDS = 9
+const BURN_BOTTOM_SEEDS = 6
 /** Image corners (uv) used to detect full coverage for completion. */
 const BURN_CORNERS: ReadonlyArray<readonly [number, number]> = [
 	[0, 0],
@@ -178,6 +178,10 @@ function ImageMesh({
 
 	const progress = useRef(0)
 	const completed = useRef(false)
+	// True once this vaporize cycle has auto-seeded the bottom row. Reset only
+	// when the image is actually idle again — so clearing seeds on reset can't
+	// re-ignite during the frame where `status` is still stale ("vaporizing").
+	const hasSeeded = useRef(false)
 	const opacity = useRef(isCurrent ? 1 : 0.28)
 	const groupRef = useRef<THREE.Group>(null)
 	const tmpV = useMemo(() => new THREE.Vector3(), [])
@@ -346,13 +350,21 @@ function ImageMesh({
 		progress.current = 0
 		if (lineRef.current) lineRef.current.visible = false
 
-		// Button-triggered burn (no cigarette): once this image starts vaporizing
-		// and has no seeds yet, ignite a row along the bottom edge so the fire
-		// climbs upward on its own — the "Burn"/"Burn all" flow.
-		if (isCurrent && status === "vaporizing" && getBurnSeeds(src).length === 0) {
+		// Button-triggered burn (no cigarette): the first frame of a vaporize cycle
+		// ignites several staggered points across the bottom, so the fire starts
+		// from a few distinct spots and climbs upward as they spread and merge.
+		if (
+			isCurrent &&
+			status === "vaporizing" &&
+			!hasSeeded.current &&
+			getBurnSeeds(src).length === 0
+		) {
 			for (let i = 0; i < BURN_BOTTOM_SEEDS; i++) {
-				addBurnSeed(src, (i + 0.5) / BURN_BOTTOM_SEEDS, 0.02)
+				const u = (i + 0.5) / BURN_BOTTOM_SEEDS + (Math.random() - 0.5) * 0.05
+				const v = 0.03 + Math.random() * 0.06
+				addBurnSeed(src, Math.min(0.98, Math.max(0.02, u)), v)
 			}
+			hasSeeded.current = true
 		}
 
 		// Ignite only on hover *and* press — never automatically — so the burn (and
@@ -386,7 +398,10 @@ function ImageMesh({
 		bu.uOpacity.value = opacity.current
 		bu.uAspect.value = aspect
 
-		if (status === "idle") completed.current = false
+		if (status === "idle") {
+			completed.current = false
+			hasSeeded.current = false
+		}
 
 		// Complete once the whole sheet is consumed — i.e. every corner has burned
 		// past the hole depth. Checking real coverage (not a fixed radius) keeps the

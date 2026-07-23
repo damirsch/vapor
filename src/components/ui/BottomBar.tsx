@@ -69,14 +69,16 @@ export default function BottomBar({ openPicker }: BottomBarProps) {
           <span className="hidden sm:inline">{oneLabel}</span>
         </Button>
 
-        <Button
-          variant="secondary"
-          onClick={vaporizeAll}
-          disabled={isPlaying || !anyIdle}
-        >
-          {cig ? <Flame size={16} /> : <Wind size={16} />}
-          <span className="hidden sm:inline">{allLabel}</span>
-        </Button>
+        {images.length > 1 && (
+          <Button
+            variant="secondary"
+            onClick={vaporizeAll}
+            disabled={isPlaying || !anyIdle}
+          >
+            {cig ? <Flame size={16} /> : <Wind size={16} />}
+            <span className="hidden sm:inline">{allLabel}</span>
+          </Button>
+        )}
 
         <Button
           variant="secondary"

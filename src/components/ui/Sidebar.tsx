@@ -49,6 +49,11 @@ export default function Sidebar() {
 	const open = useVaporStore((s) => s.sidebarOpen)
 	const setOpen = useVaporStore((s) => s.setSidebarOpen)
 
+	// The cigarette burn only uses spread speed + between-image delay; the vapor
+	// sweep controls (strength, turbulence, sweep line, lifetime, cursor smoke)
+	// don't apply to it, so they're hidden in burn mode.
+	const cig = settings.effect === "cigarette"
+
 	return (
 		<>
 			{/* Mobile backdrop */}
@@ -88,51 +93,57 @@ export default function Sidebar() {
 							max={1.2}
 							onChange={(v) => update("speed", v)}
 							format={(v) => `${v.toFixed(2)}×`}
-							caption='How fast the sweep dissolves the image'
+							caption={cig ? "How fast the fire spreads across the image" : "How fast the sweep dissolves the image"}
 						/>
-						<Slider
-							label='Strength'
-							value={settings.strength}
-							min={0.1}
-							max={2.5}
-							onChange={(v) => update("strength", v)}
-							format={(v) => v.toFixed(2)}
-							caption='Force pushed into the vapor as it lifts off'
-						/>
-						<Toggle label='Cursor smoke' checked={settings.cursorSmoke} onChange={(v) => update("cursorSmoke", v)} />
-						<Slider
-							label='Turbulence'
-							value={settings.turbulence}
-							min={0.1}
-							max={2.5}
-							onChange={(v) => update("turbulence", v)}
-							format={(v) => v.toFixed(2)}
-							caption='Amount of swirl in the rising smoke'
-						/>
+						{!cig && (
+							<>
+								<Slider
+									label='Strength'
+									value={settings.strength}
+									min={0.1}
+									max={2.5}
+									onChange={(v) => update("strength", v)}
+									format={(v) => v.toFixed(2)}
+									caption='Force pushed into the vapor as it lifts off'
+								/>
+								<Toggle label='Cursor smoke' checked={settings.cursorSmoke} onChange={(v) => update("cursorSmoke", v)} />
+								<Slider
+									label='Turbulence'
+									value={settings.turbulence}
+									min={0.1}
+									max={2.5}
+									onChange={(v) => update("turbulence", v)}
+									format={(v) => v.toFixed(2)}
+									caption='Amount of swirl in the rising smoke'
+								/>
+							</>
+						)}
 					</div>
 
-					<div className='space-y-6'>
-						<Slider
-							label='Sweep line width'
-							value={settings.edge}
-							min={0.05}
-							max={0.7}
-							step={0.01}
-							onChange={(v) => update("edge", v)}
-							format={(v) => v.toFixed(2)}
-							caption='Thickness of the bright dissolve edge'
-						/>
-						<Slider
-							label='Smoke lifetime'
-							value={settings.lifetime}
-							min={0.2}
-							max={2}
-							step={0.05}
-							onChange={(v) => update("lifetime", v)}
-							format={(v) => v.toFixed(2)}
-							caption='How long vapor lingers before fading out'
-						/>
-					</div>
+					{!cig && (
+						<div className='space-y-6'>
+							<Slider
+								label='Sweep line width'
+								value={settings.edge}
+								min={0.05}
+								max={0.7}
+								step={0.01}
+								onChange={(v) => update("edge", v)}
+								format={(v) => v.toFixed(2)}
+								caption='Thickness of the bright dissolve edge'
+							/>
+							<Slider
+								label='Smoke lifetime'
+								value={settings.lifetime}
+								min={0.2}
+								max={2}
+								step={0.05}
+								onChange={(v) => update("lifetime", v)}
+								format={(v) => v.toFixed(2)}
+								caption='How long vapor lingers before fading out'
+							/>
+						</div>
+					)}
 
 					<div className='space-y-6'>
 						<Slider
@@ -143,7 +154,7 @@ export default function Sidebar() {
 							step={0.1}
 							onChange={(v) => update("delay", v)}
 							format={(v) => `${v.toFixed(1)}s`}
-							caption='Pause between images during Vaporize all'
+							caption={cig ? "Pause between images during Burn all" : "Pause between images during Vaporize all"}
 						/>
 					</div>
 

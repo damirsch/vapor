@@ -353,7 +353,20 @@ function ImageMesh({
 		// Button-triggered burn (no cigarette): the first frame of a vaporize cycle
 		// ignites several staggered points across the bottom, so the fire starts
 		// from a few distinct spots and climbs upward as they spread and merge.
-		if (isCurrent && status === "vaporizing" && !hasSeeded.current && getBurnSeeds(src).length === 0) {
+		//
+		// The live-store status guard is essential: on reset, `clearBurn()` empties
+		// the seeds synchronously while the `status` prop is still a stale
+		// "vaporizing" for a frame (React hasn't re-rendered yet). Without this
+		// check that stale frame would auto-seed a fresh bottom burn instead of
+		// restoring the image. The store updates synchronously, so it's authoritative.
+		const liveStatus = useVaporStore.getState().images.find((i) => i.src === src)?.status
+		if (
+			isCurrent &&
+			status === "vaporizing" &&
+			liveStatus === "vaporizing" &&
+			!hasSeeded.current &&
+			getBurnSeeds(src).length === 0
+		) {
 			for (let i = 0; i < BURN_BOTTOM_SEEDS; i++) {
 				const u = (i + 0.5) / BURN_BOTTOM_SEEDS + (Math.random() - 0.5) * 0.05
 				const v = 0.03 + Math.random() * 0.06

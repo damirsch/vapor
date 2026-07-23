@@ -48,7 +48,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  speed: 1.0,
+  speed: 0.7,
   strength: 0.6,
   turbulence: 1.23,
   particleSize: 2.8,

@@ -32,8 +32,8 @@ export const BURN_SPREAD_BASE = 0.15
 
 /**
  * Whether the pointer is currently pressed over the canvas. The cigarette only
- * ignites on hover *and* press (set by CigaretteCursor) so a stray hover can't
- * accidentally start a burn.
+ * ignites on hover *and* press (set by the cursor system in Header) so a stray
+ * hover can't accidentally start a burn.
  */
 export const burnPointer = { down: false }
 

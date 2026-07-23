@@ -3,44 +3,7 @@ import { RotateCcw, X } from "lucide-react"
 import { useVaporStore } from "@/lib/store"
 import Button from "./Button"
 import Slider from "./Slider"
-
-function Toggle({
-	label,
-	caption,
-	checked,
-	onChange,
-}: {
-	label: string
-	caption?: string
-	checked: boolean
-	onChange: (v: boolean) => void
-}) {
-	return (
-		<div>
-			<button
-				type='button'
-				role='switch'
-				aria-checked={checked}
-				onClick={() => onChange(!checked)}
-				className='flex justify-between items-center w-full cursor-pointer'
-			>
-				<span className='font-medium text-sm tracking-wide'>{label}</span>
-				<span
-					className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-						checked ? "bg-white/85" : "bg-white/12"
-					}`}
-				>
-					<span
-						className={`inline-block h-4 w-4 rounded-full bg-black transition-transform ${
-							checked ? "translate-x-[18px]" : "translate-x-0.5"
-						}`}
-					/>
-				</span>
-			</button>
-			{caption ? <p className='mt-1.5 text-[10.5px] text-text-faint leading-snug'>{caption}</p> : null}
-		</div>
-	)
-}
+import Toggle from "./Toggle"
 
 export default function Sidebar() {
 	const settings = useVaporStore((s) => s.settings)

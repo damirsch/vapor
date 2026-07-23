@@ -9,7 +9,6 @@ import Sidebar from "@/components/ui/Sidebar";
 import Header from "@/components/ui/Header";
 import BottomBar from "@/components/ui/BottomBar";
 import LeftRail from "@/components/ui/LeftRail";
-import CigaretteCursor from "@/components/ui/CigaretteCursor";
 
 const Scene = dynamic(() => import("@/components/vapor/Scene"), {
   ssr: false,
@@ -212,7 +211,6 @@ export default function VaporApp() {
       <LeftRail openPicker={openPicker} />
       <Sidebar />
       <BottomBar openPicker={openPicker} />
-      {cigarette && <CigaretteCursor />}
 
       {/* Empty state */}
       <AnimatePresence>

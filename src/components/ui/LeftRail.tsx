@@ -70,7 +70,7 @@ export default function LeftRail({ openPicker }: LeftRailProps) {
 									src={img.src}
 									alt={img.name}
 									draggable={false}
-									className={`h-full w-full object-cover transition-opacity ${
+									className={`h-full w-full object-contain transition-opacity ${
 										img.status === "done" ? "opacity-25" : "opacity-90"
 									}`}
 								/>

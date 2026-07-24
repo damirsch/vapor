@@ -19,7 +19,7 @@ const siteUrl =
 
 const title = "Vapor OS — dissolve images into light"
 const description =
-	"A real-time WebGL playground. Upload any image and vaporize it into drifting colored smoke, or burn it away"
+	"Upload any image and vaporize it into drifting colored smoke, or burn it away. A real-time WebGL playground"
 
 export const metadata: Metadata = {
 	metadataBase: new URL(siteUrl),

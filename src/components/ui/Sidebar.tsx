@@ -125,10 +125,21 @@ export default function Sidebar() {
 						/>
 					</div>
 
-					<Button className='mt-auto' variant='ghost' fullWidth onClick={resetSettings}>
-						<RotateCcw size={13} />
-						Reset settings
-					</Button>
+					<div className='flex flex-col gap-2 mt-auto'>
+						<Button variant='ghost' fullWidth onClick={resetSettings}>
+							<RotateCcw size={13} />
+							Reset settings
+						</Button>
+
+						<a
+							href='https://x.com/heydamir'
+							target='_blank'
+							rel='noopener noreferrer'
+							className='text-[11px] text-text-faint hover:text-text text-center transition-colors'
+						>
+							Designed by <span className='font-medium'>@heydamir</span>
+						</a>
+					</div>
 				</div>
 			</aside>
 		</>

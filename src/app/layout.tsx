@@ -17,7 +17,7 @@ const siteUrl =
 	process.env.NEXT_PUBLIC_SITE_URL ??
 	(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
 
-const title = "Vapor OS — dissolve images into light"
+const title = "Vapor OS — turn images into smoke"
 const description =
 	"Upload any image and vaporize it into drifting colored smoke, or burn it away. A real-time WebGL playground"
 

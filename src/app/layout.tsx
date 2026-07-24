@@ -13,10 +13,39 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 })
 
+const siteUrl =
+	process.env.NEXT_PUBLIC_SITE_URL ??
+	(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+
+const title = "Vapor OS — dissolve images into light"
+const description =
+	"A real-time WebGL playground. Upload any image and vaporize it into drifting colored smoke, or burn it away"
+
 export const metadata: Metadata = {
-	title: "Vapor OS — dissolve images into light",
-	description:
-		"A real-time WebGL playground. Upload any image and vaporize it into drifting colored smoke, or burn it away",
+	metadataBase: new URL(siteUrl),
+	title,
+	description,
+	openGraph: {
+		type: "website",
+		siteName: "Vapor OS",
+		title,
+		description,
+		url: "/",
+		images: [
+			{
+				url: "/og-image.png",
+				width: 2400,
+				height: 1260,
+				alt: "Vapor OS",
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		title,
+		description,
+		images: ["/og-image.png"],
+	},
 }
 
 export const viewport: Viewport = {

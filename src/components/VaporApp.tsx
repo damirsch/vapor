@@ -79,9 +79,13 @@ export default function VaporApp() {
       if (e.cancelable) e.preventDefault();
 
       const now = performance.now();
-      // During cooldown, keep eating the decaying momentum so it can't stack
-      // up into an unwanted second step.
+      // During cooldown, keep eating the decaying momentum — and KEEP PUSHING
+      // the cooldown forward while events still arrive. A trackpad flick coasts
+      // (inertia) far longer than a fixed window, so without extending it the
+      // leftover momentum crosses the threshold again and triggers a second,
+      // unwanted step. The window only truly clears once scrolling has stopped.
       if (now < cooldownUntil) {
+        cooldownUntil = now + COOLDOWN;
         accum = 0;
         return;
       }

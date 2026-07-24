@@ -34,8 +34,8 @@ export const metadata: Metadata = {
 		images: [
 			{
 				url: "/og-image.png",
-				width: 2400,
-				height: 1260,
+				width: 1200,
+				height: 630,
 				alt: "Vapor OS",
 			},
 		],
